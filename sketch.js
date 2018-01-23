@@ -1,9 +1,9 @@
 function setup() {
-  createCanvas(960, 400);
+  createCanvas(800, 400);
 }
 
 function draw() {
-  background('yellow');
+  background('pink');
   fill(20, 204, 50);
   textSize(50);
   fill(20, 50, 90);
