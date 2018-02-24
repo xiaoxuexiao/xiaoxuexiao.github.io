@@ -1,3 +1,4 @@
+var nytResponse;
 var headlines = [];
 var hitwords = [
   "x",
@@ -7,14 +8,10 @@ var hitwords = [
 
 ];
 
-var nytResponse;
-var letterCounts;
-
-var maxTextSize = 250;
-var defaultTextSize = 24;
 
 
 function preload() {
+
 
   // Assemble url for API call
   var url = "https://api.nytimes.com/svc/topstories/v2/home.json";
@@ -26,43 +23,31 @@ function preload() {
   // we'll have a response before setup() and draw() is run.
 }
 
+
 function setup() {
-  createCanvas(800, 1150);
-  background(0);
+	createCanvas(1200, 1000);
 
-  textSize(14);
-  textAlign(LEFT);
-
-  noLoop(); // since we're not animating, one frame is sufficient: run draw() just once
+	noLoop();
 
   extractHeadlines();
+
 }
+
 
 function draw() {
   background(0);
+  fill("red");
+  
+  for (var i = 0; i < nytResponse.results.length; i++) {
+  text(nytResponse.results[i].title, 20, 20+i*15);
+}
 
-  var lineheight = 24;
-  var margin = 40;
-  translate(margin, margin);
+//console.log(nytResponse);
 
-  for (var i = 0; i < headlines.length; i++) {
-    var words = split(headlines[i], '');
-  console.log(words);
+for (var j = 0; j < headlines.length; j++) {
+    var words = split(headlines[j], '');
+     console.log(words);
 
-    var nextX = 0;
-
-     for (var j = 0; j < words.length; j++) {
-      if (hitwords.includes(words[j].toLowerCase())) {
-        fill("blue");
-        rect(0, i*lineheight, 20, lineheight);
-      } else {
-        fill("yellow");
-      }
-
-      text(words[j], nextX, i*lineheight);
-      nextX += textWidth(words[j]);
-    }
-  }
 }
 
 function extractHeadlines() {
@@ -75,9 +60,8 @@ function extractHeadlines() {
     // .abstract, .byline, .section, etc. etc.
     append(headlines, h);
   }
-
-   //console.log(headlines); // make sure counted data looks as expected
 }
+   //console.log(headlines); // make sure counted data looks as expected
 
 
 
