@@ -32,7 +32,7 @@ function setup() {
 
 function draw() {
 //console.log(Yellowcab[0].tip_amount);
-  //console.log(Yellowcab);
+  console.log(Yellowcab);
 
   cx = width / 2;
   cy = height / 2;
@@ -91,7 +91,7 @@ function extractData() {
 
   }
 
-  console.log(passenger);
+  //console.log(passenger);
 
 for (var i = 0; i < 1000; i++) {
 	var h = split((pickup[i].substring(11, (pickup[i].length)-4)), ":"); 
