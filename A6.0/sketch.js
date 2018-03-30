@@ -11,6 +11,7 @@ var timesplit = [];
 var passenger = [];
 var la = [];
 var long = [];
+var state = 0;
 
 // state variables
 
@@ -28,8 +29,8 @@ function preload() {
 
 function setup() {
 
- var button = createButton("click");
-  button.mousePressed(showtipsSketch);
+ var button = createButton("Click");
+  button.mousePressed(Click);
 
   width = 1000;
   length = 1000;
@@ -40,13 +41,18 @@ function setup() {
   ra = 6;
   angleMode(DEGREES);
 
-
 //console.log(Yellowcab[0].tip_amount);
-
-
 //misinterpretation:
 
-  var lafirst = max(la);
+  }
+
+
+function draw() {
+
+
+if(state == 0) {
+
+var lafirst = max(la);
   var lasecond = max(la);
 
  for (var i = 0; i < 1000; i++) {
@@ -87,8 +93,6 @@ for (var i = 0; i < 1000; i++) {
 //  ellipse(k, h, tippercent[i]/2, tippercent[i]/2);
   ellipse(k, length-h, ra, ra);
 
-
-
 //interaction
 
 //if (mouseX > k-ra && mouseX < k+ra && mouseY > h-ra && mouseY < h+ra){
@@ -101,6 +105,7 @@ for (var i = 0; i < 1000; i++) {
    // }
 
  }
+
 push();
  translate(800, 800);
 //draw clock 
@@ -115,16 +120,9 @@ line(0, 0, 0, -50);
 }
 pop();
 
-
-
 }
 
-
-
-
-function showtipsSketch() {
-
-  width = 1000;
+if (state == 1) { width = 1000;
   length = 1000;
   createCanvas(width, length);
   background(0);
@@ -216,12 +214,11 @@ line(0, 0, 0, -50);
 pop();
 
 
-
-
 }
 
 
-function draw() {
+
+
 
 noStroke();
 fill(255);
@@ -247,12 +244,16 @@ pop();
 
 }
 
-// console.log(first);
-
-
+  // console.log(first);
   //console.log(la);
   //console.log(max(la));
   //console.log(min(la));
+
+function Click() {
+  state = (state == 0) ? 1 : 0; // shorthand if-statement, aka "inline if"
+
+}
+
 
 
 function extractData() {
