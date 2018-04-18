@@ -19,11 +19,16 @@ function preload() {
 
 
   // Assemble url for API call
+<<<<<<< HEAD
 uber = loadTable('uber-raw-data-20140405-sorted.csv', 'csv', 'header');
 console.log(uber);
  
  // uber = loadTable('https://raw.githubusercontent.com/fivethirtyeight/uber-tlc-foil-response/master/uber-trip-data/uber-raw-data-apr14.csv', 'csv', 'header');
 
+=======
+
+  uber = loadTable('https://raw.githubusercontent.com/fivethirtyeight/uber-tlc-foil-response/master/uber-trip-data/uber-raw-data-apr14.csv', 'csv', 'header');
+>>>>>>> 2696ca2c746c0240a3653a2897b2a4602f81a82c
 
   var url = "https://data.cityofnewyork.us/resource/gkne-dk5s.json";
 
@@ -52,8 +57,11 @@ function draw() {
   s = s+1;
   if (s>1000){s=0;}
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 2696ca2c746c0240a3653a2897b2a4602f81a82c
 }
 
 	
@@ -82,6 +90,10 @@ for (var i = 0; i<1000; i++) {
 
 }
 
+<<<<<<< HEAD
 //console.log(cablat);
+=======
+console.log(cablat);
+>>>>>>> 2696ca2c746c0240a3653a2897b2a4602f81a82c
 
 }
