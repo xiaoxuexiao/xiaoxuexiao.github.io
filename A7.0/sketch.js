@@ -87,6 +87,21 @@ function draw() {
     }
   } 
 
+// draw button indicator;
+  
+  stroke(255);
+  line(50, 50, 150, 50);
+
+  noStroke();
+  fill(255, 255, 0);
+  ellipse(50, 50, 8, 8);
+
+  fill(0, 225, 255);
+  ellipse(100, 50, 8, 8);
+
+  fill(0, 217, 56);
+  ellipse(150, 50, 8, 8);
+
 
 
 
@@ -95,10 +110,13 @@ function draw() {
 
   if (f == 0) {
 
+  fill(255, 255, 0);
+  ellipse(50, 50, 15, 15);
+
   //text
 
   fill(255);
-  text('Yellow Cab Trip Weekday (04/01/2014) and Weekend (04/05/2014) Comparison', 50, 50);  
+  text('Yellow Cab Trip Weekday (04/01/2014) and Weekend (04/05/2014) Comparison', 50, 80);  
   fill(255, 255, 0);
   ellipse(50, 100, 8, 8);
   text('Weekday', 60, 100);
@@ -151,10 +169,13 @@ function draw() {
 
   else if (f == 1 ) {
 
+  fill(0, 225, 255);
+  ellipse(100, 50, 15, 15);
+
    //text
 
   fill(255);
-  text('Uber Trip Weekday (04/01/2014) and Weekend (04/05/2014) Comparison', 50, 50);  
+  text('Uber Trip Weekday (04/01/2014) and Weekend (04/05/2014) Comparison', 50, 80);  
   fill(0, 255, 255);
   ellipse(50, 100, 8, 8);
   text('Weekday', 60, 100);
@@ -205,9 +226,14 @@ function draw() {
 
   else if (f == 2) {
 
+
+  fill(0, 217, 56);
+  ellipse(150, 50, 15, 15); 
+
+
      //text
   fill(255);
-  text('Yellow Cab/Uber Trip Weekday (04/01/2014) Comparison', 50, 50);  
+  text('Yellow Cab/Uber Trip Weekday (04/01/2014) Comparison', 50, 80);  
   fill(0, 255, 255);
   ellipse(50, 100, 8, 8);
   text('Uber', 60, 100);
