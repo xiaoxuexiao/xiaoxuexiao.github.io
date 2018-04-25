@@ -1,416 +1,428 @@
+// constants
+let mapLat = [40.65, 40.85];
+let mapLon = [-74.05, -73.85];
+let mapWindowSize = 60;
+let curveAverageWindowSize = 5;
+let timelineAxisColor = [255, 255, 255];
+let timelineGraduationColor = [55, 55, 55];
+let arrowColor = [190, 190, 190];
 
+// pixel density
+var density;
 
-// state data sources;
-var uber1 = {};
-var uber2 = {};
+// raw datasets
+var raw_uber_weekday;
+var raw_uber_weekend;
+var raw_cab_weekday;
+var raw_cab_weekend;
 
-var cab1 = {};
-var cab2 = {};
+// datasets
+var uber;
+var uber_weekday;
+var uber_weekend;
+var cab;
+var cab_weekday;
+var cab_weekend;
 
+// indexes
+var uber_index;
+var uber_weekday_index;
+var uber_weekend_index;
+var cab_index;
+var cab_weekday_index;
+var cab_weekend_index;
 
-// state variables
-var uber1lat = [];
-var uber1long = [];
-var uber1t = [];
+var uber_maximum;
+var uber_weekday_maximum;
+var uber_weekend_maximum;
+var cab_maximum;
+var cab_weekday_maximum;
+var cab_weekend_maximum;
 
-var uber2lat = []
-var uber2long = [];
-var uber2t = [];
-
-var cab1lat = [];
-var cab1long = [];
-var cab1t = [];
-
-var cab2lat = [];
-var cab2long = [];
-var cab2t = [];
-
-
-// state frame;
-var s = 0;
-var f = 0;
-
-// state visual variables
-var r = 3;
+// runtime varibales
+var timestamp = 0;
+var frame = 0;
+var datasets;
+var datasetColors;
+var pause = false;
 
 
 function preload() {
-
-
-
-uber1 = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/uber_0401.csv', 'csv', 'header');
-console.log(uber1);
-
-uber2 = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/uber_0405.csv', 'csv', 'header');
-
-cab1 = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/yellow_tripdata_2014-04-01.csv', 'csv', 'header');
-//console.log(cab1);
-
-cab2 = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/yellow_tripdata_2014-04-05.csv', 'csv', 'header');
-
+  raw_uber_weekday = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/uber_0401.csv', 'csv', 'header');
+  raw_uber_weekend = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/uber_0405.csv', 'csv', 'header');
+  raw_cab_weekday = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/yellow_tripdata_2014-04-01.csv', 'csv', 'header');
+  raw_cab_weekend = loadTable('https://raw.githubusercontent.com/xiaoxuexiao/xiaoxuexiao.github.io/master/A7.0/yellow_tripdata_2014-04-05.csv', 'csv', 'header');
 }
 
-
 function setup() {
+  density = pixelDensity();
+  canvas_width = max(windowWidth, 1000);
+  canvas_height = max(windowHeight, 1000);
+  createCanvas(canvas_width, canvas_height);
 
-  width = 1000;
-  length = 1000;
-  
-  createCanvas(width, length);
-  background(0);
-  
-  frameRate(200);
+  // create virtual boxes for the different components
+  timelineBox = [(canvas_width - min(1000, canvas_width - 420)) / 2, canvas_height - 200, min(1000, canvas_width - 420), 200];
+  mapSize = min((canvas_width / 2) - 100, (canvas_height - 200) - 100);
+  mapLeftBox = [(canvas_width / 2) - 50 - mapSize, 50, mapSize, mapSize];
+  mapRightBox = [canvas_width - 50 - mapSize, 50, mapSize, mapSize];
+  arrowLeftBox = [(canvas_width - timelineBox[2] - 420) / 2, canvas_height - 200, 210, 200];
+  arrowRightBox = [(canvas_width + timelineBox[2]) / 2, canvas_height - 200, 210, 200];
 
-  loadData();
-  
+  // process the data
+  console.log("loading data");
+  uber_weekday = loadData(raw_uber_weekday, mapSize, mapSize);
+  uber_weekend =  loadData(raw_uber_weekend, mapSize, mapSize);
+  cab_weekday = loadData(raw_cab_weekday, mapSize, mapSize);
+  cab_weekend =  loadData(raw_cab_weekend, mapSize, mapSize);
+  uber = merge(uber_weekday, uber_weekend);
+  cab = merge(cab_weekday, cab_weekend);
+  console.log("data loaded");
 
-  var button0 = createButton("next");
-  button0.mousePressed(Next);
+  // process the indexes
+  uber_index = loadIndex(uber, mapSize, mapSize);
+  uber_weekday_index = loadIndex(uber_weekday, mapSize, mapSize);
+  uber_weekend_index = loadIndex(uber_weekend, mapSize, mapSize);
+  cab_index = loadIndex(cab, mapSize, mapSize);
+  cab_weekday_index = loadIndex(cab_weekday, mapSize, mapSize);
+  cab_weekend_index = loadIndex(cab_weekend, mapSize, mapSize);
 
-  
+  // process the maximum value
+  uber_maximum = loadMaximum(uber);
+  uber_weekday_maximum = loadMaximum(uber_weekday);
+  uber_weekend_maximum = loadMaximum(uber_weekend);
+  cab_maximum = loadMaximum(cab);
+  cab_weekday_maximum = loadMaximum(cab_weekday);
+  cab_weekend_maximum = loadMaximum(cab_weekend);
+
+  datasets = [[cab_weekday, cab_weekend], [uber_weekday, uber_weekend], [cab, uber]];
+  indexes = [[cab_weekday_index, cab_weekend_index], [uber_weekday_index, uber_weekend_index], [cab_index, uber_index]];
+  maximums = [[cab_weekday_maximum, cab_weekend_maximum], [uber_weekday_maximum, uber_weekend_maximum], [cab_maximum, uber_maximum]];
+  titles = [["Cab Weekday", "Cab Weekend"], ["Uber Weekday", "Uber Weekend"], ["Cab All Week", "Uber All Week"]];
+  datasetColors = [[[255, 255, 0], [255, 180, 0]], [[0, 225, 255], [0, 66, 255]], [[255, 255, 0], [0, 255, 255]]]
+
+  frameRate(15);
+  textFont('Verdana');
+}
+
+function drawTimelineAxis(box, maximum) {
+  // draw the horizontal and vertical axis
+  stroke(timelineAxisColor);
+  strokeWeight(2);
+  line(box[0] + 50, box[1] + 160, box[0] + box[2] - 80, box[1] + 160);
+
+  stroke(timelineGraduationColor);
+  line(box[0] + 50, box[1] + 120, box[0] + box[2] - 80, box[1] + 120);
+  line(box[0] + 50, box[1] + 80, box[0] + box[2] - 80, box[1] + 80);
+  line(box[0] + 50, box[1] + 40, box[0] + box[2] - 80, box[1] + 40);
+
+  // draw the graduations
+  noStroke();
+  fill(timelineAxisColor);
+  textSize(12);
+  textAlign(CENTER);
+  for (var i = 0; i <= 24; i++){
+      ellipse(box[0] + 50 + (box[2] - 130)/24*i, box[1] + 160, 6, 6);
+      text(i, box[0] + 50 + (box[2] - 130)/24*i, box[1] + 180);
+  }
+
+  textAlign(RIGHT, CENTER);
+  for (var i = 0; i <= 3; i++) {
+    text(i * maximum / 3, box[0] + 35, box[1] + 160 - i*40);
+  }
+
+  textAlign(RIGHT, BOTTOM);
+  text("Trip count", box[0] + 50, box[1] + 10);
+
+  textAlign(LEFT, CENTER);
+  text("Hour of day", box[0] + box[2] - 65, box[1] + 160);
+
+  textSize(16);
+  textAlign(CENTER, BOTTOM);
+  text("Uber and Yellow Cab trip count comparison in 2014", box[0] + (box[2] / 2), box[1]);
+}
+
+function drawTimelineCurve(box, dataset, maximum, color) {
+  var previous = 0;
+  var current = 0;
+
+  for (var i = 0; i < 60*24; i++) {
+    // moving average for first curve
+    var count = 0;
+    for (var j = i - curveAverageWindowSize + 1; j < i + curveAverageWindowSize; j++) {
+      if (j < 0) {
+        count += dataset[j + 60*24].length;
+      } else if (j >= 60*24) {
+        count += dataset[j - 60*24].length;
+      } else {
+        count += dataset[j].length;
+      }
+    }
+    previous = current;
+    current = 120 * (count / (2*curveAverageWindowSize - 1)) / maximum;
+
+    if (i > 0) {
+      let distance = timestampDistance(timestamp, i);
+      var alpha = 0.0;
+      if (distance < mapWindowSize) {
+        alpha = 100
+      } else if (distance > 3*mapWindowSize) {
+        alpha = 20;
+      } else {
+        // linear gradient outside of the window
+        alpha = 20 + (80 * (1 - ((distance - mapWindowSize) / (2 * mapWindowSize))));
+      }
+
+      strokeWeight(2);
+      stroke(color[0], color[1], color[2], alpha);
+      line(box[0] + 50 + (box[2] - 130)/(24*60)*(i-1), box[1] + 160 - previous, box[0] + 50 + (box[2] - 130)/(24*60)*i, box[1] + 160 - current);
+    }
+  }
+}
+
+function drawMap(box, index, color) {
+  for (var i = 0; i < index.length; i++) {
+    let x = i % box[2];
+    let y = Math.floor(i / box[2]);
+
+    var maximumCoeff = 0;
+    for (var j = 0; j < index[i].length; j++) {
+      if (index[i][j][1] < maximumCoeff) {
+        break;
+      }
+
+      let distance = timestampDistance(timestamp, index[i][j][0]);
+      var coeff = 0.0;
+      if (distance < mapWindowSize) {
+        coeff = 1
+      } else if (distance > 3*mapWindowSize) {
+        coeff = 0;
+      } else {
+        // linear gradient outside of the window
+        coeff = (1 - ((distance - mapWindowSize) / (2*mapWindowSize)));
+      }
+      coeff *= index[i][j][1];
+
+      if (coeff > maximumCoeff) {
+        maximumCoeff = coeff;
+      }
+    }
+
+    if (maximumCoeff > 0) {
+      let alpha = int(20 + (200 * maximumCoeff));
+      drawPixel(box[0] + x, box[1] + y, [color[0], color[1], color[2], alpha]);
+    }
+  }
+}
+
+function drawLeftArrow() {
+  stroke(arrowColor);
+  strokeWeight(3);
+
+  let box = arrowLeftBox;
+  line(box[0] + 60, box[1] + (box[3] / 2), box[0] + box[2] - 70, box[1] + 20);
+  line(box[0] + 60, box[1] + (box[3] / 2), box[0] + box[2] - 70, box[1] + box[3] - 20);
+
+  noStroke();
+  textSize(12);
+  textAlign(RIGHT, CENTER);
+  text("previous", box[0] + 40, box[1] + (box[3] / 2));
+}
+
+function drawRightArrow() {
+  stroke(arrowColor);
+  strokeWeight(3);
+
+  let box = arrowRightBox;
+  line(box[0] + box[2] - 60, box[1] + (box[3] / 2), box[0] + 70, box[1] + 20);
+  line(box[0] + box[2] - 60, box[1] + (box[3] / 2), box[0] + 70, box[1] + box[3] - 20);
+
+  noStroke();
+  textSize(12);
+  textAlign(LEFT, CENTER);
+  text("next", box[0] + box[2] - 40, box[1] + (box[3] / 2));
+}
+
+function drawTitle(box, title) {
+  textAlign(LEFT, TOP);
+  textSize(24);
+  text(title, box[0], box[1]);
 }
 
 function draw() {
-
-  noStroke();
-
-// draw timeline;
-
-  fill(255);
-  ellipse(50+900/(24*60)*s, 960, 2, 2);
-
-    for (var i = 0; i<25; i++){
-    if ( i*60 == s ) {
-      fill(255);
-      ellipse(50+900/24*i, 960, 6, 6);
-      text(i, 50+900/24*i-4, 980);
-    }
-  } 
-
-
-
-
-// data cab comparison;
-
-
-  if (f == 0) {
-
-  //text
-
-  fill(255);
-  text('Yellow Cab Trip Weekday (04/01/2014) and Weekend (04/05/2014) Comparison', 50, 50);  
-  fill(255, 255, 0);
-  ellipse(50, 100, 8, 8);
-  text('Weekday', 60, 100);
-  fill(255, 180, 0);
-  ellipse(50, 120, 8, 8);
-  text('Weekend', 60, 120);
-
-  var a = 0;
-  var b = 0;
-
-  // draw yellow cab 01 map;
-  
-  for (var i = 0; i<cab1t.length; i++){
-    if ( cab1t[i] == s ) {
-      fill(255, 255, 0, 10);
-      ellipse(cab1long[i]+160, length-cab1lat[i], r, r);
-      a = a+1;
-    }     
-  }
-
-// draw yellow cab 02 map;
-
-  for (var i = 0; i<cab2t.length; i++){
-    if ( cab2t[i] == s ) {
-      fill(255, 180, 0, 10);
-      ellipse(cab2long[i]-350, length-cab2lat[i], r, r);
-      b = b+1;
-
-    }
-  }
-
-
-  //draw curve;
-  fill(255, 255, 0);
-  ellipse(50+900/(24*60)*s, 950-0.15*a, 2, 2);
-
-  fill(255, 180, 0);
-  ellipse(50+900/(24*60)*s, 950-0.15*b, 2, 2);
-  
-  s = s+1;
-  if (s>24*60) {s=24*60+1;} 
-  //should stop s, when it reach uberlat.length.
-  //console.log(a);
-  }
-
-
-
-
-//data uber comparison;
-
-  else if (f == 1 ) {
-
-   //text
-
-  fill(255);
-  text('Uber Trip Weekday (04/01/2014) and Weekend (04/05/2014) Comparison', 50, 50);  
-  fill(0, 255, 255);
-  ellipse(50, 100, 8, 8);
-  text('Weekday', 60, 100);
-  fill(0, 66, 255);
-  ellipse(50, 120, 8, 8);
-  text('Weekend', 60, 120);   
-
-  var a = 0;
-  var b = 0;
-
-  //uber1 
- for (var i = 0; i<uber1t.length; i++){
-    if ( uber1t[i] == s ) {
-      fill(0, 225, 255, 100);
-      ellipse(uber1long[i]+160, length-uber1lat[i], r, r);
-      a = a+1;
-
-    }
-  }
-
- for (var i = 0; i<uber2t.length; i++){
-    if ( uber2t[i] == s ) {
-      fill(0, 66, 255, 100);
-      ellipse(uber2long[i]-350, length-uber2lat[i], r, r);
-      b = b+1;
-    }
-  }
-
-  //draw curve;
-  fill(0, 225, 255);
-  ellipse(50+900/(24*60)*s, 950-a, 2, 2);
-
-  fill(0, 66, 255);
-  ellipse(50+900/(24*60)*s, 950-b, 2, 2);
-  
-  s = s+1;
-  if (s>24*60) {s=24*60+1;} 
-  //should stop s, when it reach uberlat.length.
-  //console.log(a);
-
-  }
-
-
-
-
-
-//data uber/cab weekday comparison;
-
-  else if (f == 2) {
-
-     //text
-  fill(255);
-  text('Yellow Cab/Uber Trip Weekday (04/01/2014) Comparison', 50, 50);  
-  fill(0, 255, 255);
-  ellipse(50, 100, 8, 8);
-  text('Uber', 60, 100);
-  fill(255, 255, 0);
-  ellipse(50, 120, 8, 8);
-  text('Yellow Cab', 60, 120);   
-
- 	var a = 0;
-  var b = 0;
-
-  // draw yellow cab 01 map;
-  
-  for (var i = 0; i<cab1t.length; i++){
-  	if ( cab1t[i] == s ) {
-      fill(255, 255, 0, 10);
-  		ellipse(cab1long[i]+160, length-cab1lat[i], r, r);
-  		a = a+1;
-  	} 		
-  }
-
-// draw uber 01 map;
-
-  for (var i = 0; i<uber1t.length; i++){
-    if ( uber1t[i] == s ) {
-      fill(0, 225, 255, 100);
-      ellipse(uber1long[i]-350, length-uber1lat[i], r, r);
-      b = b+1;
-
-    }
-  }
-
-
-	//draw curve;
-	fill(255, 255, 0);
-  ellipse(50+900/(24*60)*s, 950-0.15*a, 2, 2);
-
-  fill(0, 225, 255);
-  ellipse(50+900/(24*60)*s, 950-b, 2, 2);
-	
-	s = s+1;
- 	if (s>24*60) {s=24*60+1;} 
-  //should stop s, when it reach uberlat.length.
- 	//console.log(a);
-
-}
-
-
-
-
-}
-
-
-
-
-function Next() {
   background(0);
-  s = 0;
-  f = f+1;
-  if (f > 2) {
-    f = 0;
+
+  let maximum = Math.ceil(max(maximums[frame][0], maximums[frame][1]) / 15) * 15;
+  if (maximum > 150) {
+    maximum = Math.ceil(maximum / 150) * 150;
+  }
+  drawLeftArrow();
+  drawRightArrow();
+  drawTimelineAxis(timelineBox, maximum);
+  drawTimelineCurve(timelineBox, datasets[frame][0], maximum, datasetColors[frame][0]);
+  drawTimelineCurve(timelineBox, datasets[frame][1], maximum, datasetColors[frame][1]);
+
+  loadPixels();
+  drawMap(mapLeftBox, indexes[frame][0], datasetColors[frame][0]);
+  drawMap(mapRightBox, indexes[frame][1], datasetColors[frame][1]);
+  updatePixels();
+
+  drawTitle(mapLeftBox, titles[frame][0]);
+  drawTitle(mapRightBox, titles[frame][1]);
+
+  if (!pause) {
+    timestamp += 15;
+    if (timestamp >= 60*24) {
+      timestamp = 0;
+    }
   }
 }
-	
 
-function loadData() {
+function drawPixel(x, y, color) {
+  for (var i = 0; i < density; i++) {
+    for (var j = 0; j < density; j++) {
+      let idx = 4 * ((y * density + j) * canvas_width * density + (x * density + i));
+      pixels[idx] = color[0];
+      pixels[idx + 1] = color[1];
+      pixels[idx + 2] = color[2];
+      pixels[idx + 3] = color[3];
+    }
+  }
+}	
 
-//data uber0401
+function loadData(rawDataset, width, height) {
+  var dataset = Array(60*24);
+  for (var i = 0; i < 60*24; i ++) {
+    dataset[i] = [];
+  }
 
-var a1 = uber1.getColumn("Lat");
-var b1 = uber1.getColumn("Lon"); 
-var c1 = uber1.getColumn("Date/Time");
+  var timeColumn = rawDataset.getColumn(0);
+  var latColumn = rawDataset.getColumn(1);
+  var lonColumn = rawDataset.getColumn(2);
 
-for (var i = 0; i<a1.length; i++) { 
+  for (var i = 0; i < timeColumn.length; i++) {
+    var x = map(parseFloat(lonColumn[i]), mapLon[0], mapLon[1], 0, width);
+    var y = height - map(parseFloat(latColumn[i]), mapLat[0], mapLat[1], 0, height);
+    let splitTime = timeColumn[i].split(" ")[1].split(":");
+    var parsedTime = (parseInt(splitTime[0]) * 60) + parseInt(splitTime[1]);
+    append(dataset[parsedTime], [x, y]);
+  }
 
-  var x = map(a1[i], 40.65, 40.85, 0, width);
-  var y = map(b1[i], -74.10, -73.90, 0, length);
-
-  append(uber1lat, x);
-  append(uber1long, y);
+  return dataset;
 }
 
-for (var i = 0; i<3884; i++) {
+function loadIndex(dataset, width, height) {
+  console.log("loading the index");
+  var index = Array(width*height);
+  for (var i = 0; i < width*height; i++) {
+    index[i] = [];
+  }
 
-   var x = Number(c1[i].substring(9, 10))*60 + Number(c1[i].substring(11, 13));
-  //var x = c1[i];
+  for (var i = 0; i < 60*24; i++) {
+    let coordinates = dataset[i];
+    for (var j = 0; j < coordinates.length; j++) {
+      let x = Math.floor(coordinates[j][0]);
+      let y = Math.floor(coordinates[j][1]);
 
-  append(uber1t, x);
+      if (coordinates[j][0] > x && coordinates[j][1] > y) {
+        let coeff = (coordinates[j][0] - x) * (coordinates[j][1] - y);
+        let idx = (y * width) + x;
+        if (idx >= 0 && idx < index.length) {
+          index[idx].push([i, coeff]);
+        }
+      }
+      if (coordinates[j][0] < x + 1 && coordinates[j][1] > y) {
+        let coeff = (x + 1 - coordinates[j][0]) * (coordinates[j][1] - y);
+        let idx = (y * width) + (x + 1);
+        if (idx >= 0 && idx < index.length) {
+          index[idx].push([i, coeff]);
+        }
+      }
+      if (coordinates[j][0] > x && coordinates[j][1] < y + 1) {
+        let coeff = (coordinates[j][0] - x) * (y + 1 - coordinates[j][1]);
+        let idx = ((y + 1) * width) + x;
+        if (idx >= 0 && idx < index.length) {
+          index[idx].push([i, coeff]);
+        }
+      }
+      if (coordinates[j][0] < x + 1 && coordinates[j][1] < y + 1) {
+        let coeff = (x + 1 - coordinates[j][0]) * (y + 1 - coordinates[j][1]);
+        let idx = ((y + 1) * width) + (x + 1);
+        if (idx >= 0 && idx < index.length) {
+          index[idx].push([i, coeff]);
+        }
+      }
+    }
+  }
+
+  for (var i = 0; i < index.length; i++) {
+    index[i].sort(function(a, b){return b[1] - a[1]})
+  }
+
+  console.log("loaded the index");
+
+  return index;
 }
 
-for (var i = 3884; i<uber1lat.length; i++){
-
-  var x = Number(c1[i].substring(9, 11))*60 + Number(c1[i].substring(12, 14));
- 
-  append(uber1t, x);
+function loadMaximum(dataset) {
+  var maximum = 0;
+  for (var i = 0; i < 60*24; i++) {
+    if (dataset[i].length > maximum) {
+      maximum = dataset[i].length;
+    }
+  }
+  return maximum;
 }
 
-//console.log(uber1t);
-
-//data uber0405;
-
-
-var a2 = uber2.getColumn("Lat");
-var b2 = uber2.getColumn("Lon"); 
-var c2 = uber2.getColumn("Date/Time");
-
-for (var i = 0; i<a2.length; i++) { 
-
-  var x = map(a2[i], 40.65, 40.85, 0, width);
-  var y = map(b2[i], -74.10, -73.90, 0, length);
-
-  append(uber2lat, x);
-  append(uber2long, y);
+function merge(dataset1, dataset2) {
+  var dataset = Array(60*24);
+  for (var i = 0; i < 60*24; i ++) {
+    dataset[i] = dataset1[i].concat(dataset2[i]);
+  }
+  return dataset;
 }
 
-for (var i = 0; i<3140; i++) {
-
-   var x = Number(c2[i].substring(9, 10))*60 + Number(c2[i].substring(11, 13));
-
-   append(uber2t, x);
+function timestampDistance(timestamp1, timestamp2) {
+  if (timestamp1 < timestamp2) {
+    return min(timestamp2 - timestamp1, timestamp1 - timestamp2 + 60*24);
+  } else {
+    return min(timestamp1 - timestamp2, timestamp2 - timestamp1 + 60*24);
+  }
 }
 
-
-for (var i = 3140; i<uber2lat.length; i++){
-
-  var x = Number(c2[i].substring(9, 11))*60 + Number(c2[i].substring(12, 14));
- 
-  append(uber2t, x);
+// actions
+function next() {
+  frame = frame + 1;
+  if (frame > 2) {
+    frame = 0;
+  }
 }
 
-
-//console.log(uber2t);
-
-//data cab0405;
-
-var a3 = cab2.getColumn("Pickup Latitude");
-var b3 = cab2.getColumn("Pickup Longitude");
-var c3 = cab2.getColumn("Pickup Datetime");
-
-for (var i = 0; i<a3.length; i++) { 
-
-  var x = map(a3[i], 40.65, 40.85, 0, width);
-  var y = map(b3[i], -74.10, -73.90, 0, length);
-
-
-  append(cab2lat, x);
-  append(cab2long, y);
-
+function previous() {
+  frame = frame - 1;
+  if (frame < 0) {
+    frame = 2;
+  }
 }
 
-
-for (var i = 0; i<150904; i++) {
-
-   var x = Number(c3[i].substring(9, 10))*60 + Number(c3[i].substring(11, 13));
-   
-   append(cab2t, x);
+function mousePressed() {
+  if (mouseInBox(timelineBox)) {
+    pause = true;
+  }
 }
 
-for (var i = 150904; i<cab2lat.length; i++){
-
-  var x = Number(c3[i].substring(9, 11))*60 + Number(c3[i].substring(12, 14));
- 
-  append(cab2t, x);
+function mouseReleased() {
+  pause = false;
 }
 
-
-
-//console.log(cab2t);
-//console.log(ubertime);
-
-
-
-
-
-//data cab0401
-
-var a = cab1.getColumn("Pickup Latitude");
-var b = cab1.getColumn("Pickup Longitude");
-var c = cab1.getColumn("Pickup Datetime");
-
-for (var i = 0; i<a.length; i++) { 
-
-	var x = map(a[i], 40.65, 40.85, 0, width);
-	var y = map(b[i], -74.10, -73.90, 0, length);
-
-  append(cab1lat, x);
-  append(cab1long, y);
+function mouseClicked() {
+  console.log("clicked");
+  if (mouseInBox(arrowLeftBox)) {
+    previous();
+  } else if (mouseInBox(arrowRightBox)) {
+    next();
+  }
 }
 
-for (var i = 0; i<119634; i++) {
-
-   var x = Number(c[i].substring(9, 10))*60 + Number(c[i].substring(11, 13));
-   
-   append(cab1t, x);
-}
-
-for (var i = 119634; i<cab1lat.length; i++){
-
-	var x = Number(c[i].substring(9, 11))*60 + Number(c[i].substring(12, 14));
- 
-  append(cab1t, x);
-}
-
-//console.log(cab1t);
-//console.log(ubertime);
-
+function mouseInBox(box) {
+  return mouseX >= box[0] && mouseX < box[0] + box[2] && mouseY >= box[1] && mouseY < box[1] + box[3];
 }
